@@ -1,0 +1,14 @@
+Django>=3.2
+djangorestframework>=3.12.4
+djoser>=2.1.0
+social-auth-app-django>=4.0.0
+drf-yasg>=1.20.0        # For Swagger and ReDoc API documentation
+djangorestframework-simplejwt>=4.7.2  # For JWT authentication
+django-cors-headers>=3.7.0  # For handling CORS in Django
+dj-rest-auth>=2.1.9  # Provides a set of REST API endpoints for registration and authentication
+pyjwt>=2.1.0  # For handling JWT tokens in custom scenarios
+requests>=2.25.1  # For making HTTP requests in Python (useful for testing APIs)
+gunicorn>=20.1.0  # For deploying Django applications in production
+django-environ>=0.4.5  # For managing environment variables
+stripe==5.0.0
+python-decouple==3.8
