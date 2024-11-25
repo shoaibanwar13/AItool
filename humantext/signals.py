@@ -5,22 +5,27 @@ from .models import Profile
 import random
 import string
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+import random
+import string
 
-def generate_unique_username():
-    """Generate a random, unique username."""
-    while True:
-        username = 'user_' + ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-        if not User.objects.filter(username=username).exists():
-            return username
+# In your_app/signals.py
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
+from django.contrib.auth.models import User
 
-@receiver(pre_save, sender=User)
-def set_unique_username(sender, instance, **kwargs):
-    """Set a unique username if not provided."""
-    if not instance.username:
-        instance.username = generate_unique_username()
-
+@receiver(user_logged_in)
+def set_username_on_google_login(sender, request, user, **kwargs):
+    # Ensure the user doesn't already have a username
+    if not user.username:
+        # Fetch the username from social account details
+        social_account = user.socialaccount_set.first()  # Assuming you're using django-allauth
+        if social_account:
+            username = social_account.extra_data.get('name') or social_account.extra_data.get('email', '').split('@')[0]
+            user.username = username
+            user.save()
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
