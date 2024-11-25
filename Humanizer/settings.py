@@ -50,11 +50,18 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',
     'allauth.account',
+    
 	# allauth social accounts
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'humantext'
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
  
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -65,7 +72,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware'
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware'
+    
 ]
 
 ROOT_URLCONF = 'Humanizer.urls'
@@ -159,7 +168,7 @@ REST_AUTH = {
 # cors headers
 # cors headers
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Remove trailing slash if necessary
+    "https://humanizer-tool.vercel.app",  # Remove trailing slash if necessary
 ]
  
 
