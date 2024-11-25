@@ -177,7 +177,8 @@ REST_AUTH = {
 # cors headers
 # cors headers
 CORS_ALLOWED_ORIGINS = [
-    "https://humanizer-tool.vercel.app",  # Remove trailing slash if necessary
+    "https://humanizer-tool.vercel.app",
+    "http://localhost:5173",	
 ]
  
 
