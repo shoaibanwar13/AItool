@@ -5,11 +5,9 @@ social-auth-app-django>=4.0.0
 drf-yasg>=1.20.0        # For Swagger and ReDoc API documentation
 pyjwt>=2.1.0  # For handling JWT tokens in custom scenarios
 requests>=2.25.1  # For making HTTP requests in Python (useful for testing APIs)
-gunicorn>=20.1.0  # For deploying Django applications in production
-django-environ>=0.4.5  # For managing environment variables
+gunicorn>=20.1.0  # For deploying Django applications in production   
 stripe==5.0.0
 python-decouple==3.8
-django-allauth==0.51.0
 dj-rest-auth==4.0.1
 Django==4.2.4
 django-allauth==0.54.0
