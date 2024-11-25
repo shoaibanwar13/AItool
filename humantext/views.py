@@ -459,10 +459,4 @@ class ContactUsView(APIView):
             return Response({'message': 'Thank you for contacting us!'}, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-from django.contrib.auth.models import User
 
-user = User(email='example@example.com')
-user.save()
-print(user.username)  # Should print a generated username
-
- 
