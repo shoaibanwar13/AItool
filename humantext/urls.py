@@ -33,10 +33,10 @@ urlpatterns = [
     path('my-profile/', GetProfileView.as_view(), name='get-profile'),
     path('edit-profile/', ProfileUpdateView.as_view(), name='profile-update'),
     path('contact/',ContactUsView.as_view(),name='contact'),
-    path('verify_payment/',verify_payment,name="verify_payment")
+    path('verify_payment/',verify_payment,name="verify_payment"),
+    path('planexpired/',PlanExpiryHundler.as_view(),name="planexpired"),
+    path('generate/', GenerateTextView.as_view(), name='generate_text'),
     
-  
-
 ]
     
 

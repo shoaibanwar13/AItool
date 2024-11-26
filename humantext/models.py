@@ -44,6 +44,7 @@ class PlanPurchase(models.Model):
     Discount=models.DecimalField(max_digits=4,decimal_places=2)
     Expire_Date=models.DateField()
     Purchase_Date=models.DateTimeField(auto_now=True)
+    Expiry_Status=models.BooleanField(default=False)
     def __str__(self):
         return f"{self.Plan_Name}"
     def save(self,*args,**kwargs):

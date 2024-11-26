@@ -76,7 +76,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-    
+
+class TextInputSerializer(serializers.Serializer):
+    text = serializers.CharField()
+
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact

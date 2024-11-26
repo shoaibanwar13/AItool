@@ -1,25 +1,20 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render
 from .serializers import * 
 from .models import *
 import stripe
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.models import User
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
-from rest_framework.response import Response
 import random
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
 from .models import OTPVerification
 from rest_framework import status
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import permissions
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from rest_framework.decorators import api_view
@@ -28,17 +23,104 @@ from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.http import JsonResponse
- 
 from rest_framework import permissions
 from  .utlis  import make_paypal_payment, verify_paypal_payment
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.generics import GenericAPIView
- 
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from django.utils.timezone import now
+from django.db.models import F
+from rest_framework.exceptions import APIException
+from nltk.corpus import wordnet
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
+import nltk
+import requests
+import random
+from textblob import TextBlob
+from django.conf import settings
+
+# Ensure nltk resources are downloaded
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
+
+# Hugging Face API setup
+API_URL = "https://api-inference.huggingface.co/models/pszemraj/flan-t5-large-grammar-synthesis"
+HEADERS = {"Authorization": f"Bearer {settings.HUGGING_FACE_API_KEY}"}  # Add token in settings
+
+# Helper functions
+def get_wordnet_pos(tag):
+    if tag.startswith('J'):
+        return wordnet.ADJ
+    elif tag.startswith('V'):
+        return wordnet.VERB
+    elif tag.startswith('N'):
+        return wordnet.NOUN
+    elif tag.startswith('R'):
+        return wordnet.ADV
+    return None
+
+def get_best_synonym(word, pos):
+    synonyms = []
+    for syn in wordnet.synsets(word, pos=pos):
+        for lemma in syn.lemmas():
+            synonym = lemma.name().replace('_', ' ')
+            if synonym.lower() != word.lower() and len(synonym.split()) == 1:
+                synonyms.append((synonym, lemma.count()))
+    synonyms = sorted(synonyms, key=lambda x: x[1], reverse=True)
+    return random.choice([syn[0] for syn in synonyms[:3]]) if synonyms else word
+
+def extract_named_entities(text):
+    words = word_tokenize(text)
+    pos_tags = pos_tag(words)
+    named_entities = nltk.ne_chunk(pos_tags)
+    return {" ".join(c[0] for c in chunk) for chunk in named_entities if hasattr(chunk, 'label')}
+
+def paraphrase_sentence(sentence, preserved_terms):
+    corrected_sentence = str(TextBlob(sentence).correct())
+    named_entities = extract_named_entities(corrected_sentence)
+    words = word_tokenize(corrected_sentence)
+    paraphrased_sentence = []
+    for word, tag in pos_tag(words):
+        if word in preserved_terms or word in named_entities:
+            paraphrased_sentence.append(word)
+        else:
+            pos = get_wordnet_pos(tag)
+            paraphrased_sentence.append(get_best_synonym(word, pos) if pos else word)
+    return ' '.join(paraphrased_sentence)
+
+def query_hugging_face_api(payload):
+    response = requests.post(API_URL, headers=HEADERS, json=payload)
+    return response.json()
+
+# API View
+class GenerateTextView(APIView):
+    def post(self, request, *args, **kwargs):
+        preserved_terms = {"ERP", "AI", "machine learning", "deep learning", "data science", "enterprisingness", "imagination", "provision"}
+        text = request.data.get('text', '')
+        if not text:
+            return Response({"error": "Text is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            paraphrased_text = paraphrase_sentence(text, preserved_terms)
+            api_response = query_hugging_face_api({"inputs": paraphrased_text})
+
+            if "error" in api_response:
+                raise APIException(f"API error: {api_response['error']}")
+
+            refined_text = api_response[0].get('generated_text', '')
+            return Response({
+                "paraphrased_text": paraphrased_text,
+                "generate_text": refined_text
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
  
  
 class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
@@ -166,6 +248,21 @@ class LoginView(APIView):
         # Try to authenticate with username
         else:
             user = authenticate(username=identifier, password=password)
+        current_plan = (
+            PlanPurchase.objects.filter(user=user, Payment_Status=True)
+            .order_by('-Purchase_Date')
+            .first()
+        )
+
+        plan_data = (
+            {
+                "Plan_Name": current_plan.Plan_Name,
+                "Expire_Date": current_plan.Expire_Date,
+            }
+            if current_plan
+            else None
+        )
+
 
         if user is not None:
             refresh = RefreshToken.for_user(user)
@@ -175,12 +272,24 @@ class LoginView(APIView):
                     'id': user.id,
                     'username': user.username,
                     'email': user.email,
+                    'plan': plan_data
                 },
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+class PlanExpiryHundler(APIView):
+    def post(self, request):
+        userpaln=PlanPurchase.objects.filter(user=request.user, Expire_Date=now()).update(Expiry_Status=True)
+        if  userpaln:
+             return Response({
+                'message': 'Your Plan Have Been Expired!! Upgrade Again For Further Use',
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({'message': 'User Plan Does Not Exist'}, status=status.HTTP_200_OK)
+
 class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
