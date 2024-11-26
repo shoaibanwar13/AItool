@@ -40,13 +40,7 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from django.utils.timezone import now
  
-from allauth.socialaccount.views import SocialLoginView
  
-from allauth.socialaccount.views import SocialLoginView
-from allauth.socialaccount.adapter import get_adapter
-from allauth.socialaccount.models import SocialAccount
-from allauth.account.utils import user_username
-
 class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
     adapter_class = GoogleOAuth2Adapter
     callback_url = "http://localhost:3000/"
