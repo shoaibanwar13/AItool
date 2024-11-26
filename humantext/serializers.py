@@ -83,3 +83,8 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = ['name', 'email', 'subject', 'message']
   
 
+class PlanPurchaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlanPurchase
+        fields = '__all__'
+       

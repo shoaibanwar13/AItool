@@ -38,13 +38,34 @@ from rest_framework.generics import GenericAPIView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+from django.utils.timezone import now
+ 
+from allauth.socialaccount.views import SocialLoginView
  
 
-
-class GoogleLogin(SocialLoginView): # if you want to use Authorization Code Grant, use this
+class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
     adapter_class = GoogleOAuth2Adapter
     callback_url = "http://localhost:3000/"
     client_class = OAuth2Client
+
+    def get_response(self):
+        response = super().get_response()  # Get the default response
+        user = self.user  # The logged-in user
+        
+        # Fetch the current plan from PlanPurchase or set a default value
+        current_plan = (
+            PlanPurchase.objects.filter(user=user, Payment_Status=True)
+            .order_by('-Purchase_Date')
+            .first()
+        )
+        plan_data = {
+            "Plan_Name": current_plan.Plan_Name if current_plan else None,
+            "Expire_Date": current_plan.Expire_Date if current_plan else None,
+        }
+
+        # Add the plan data to the response
+        response.data.update({"plan": plan_data})
+        return response
 
 # Create your views here.
 
@@ -346,12 +367,76 @@ def create_payment_intent(request):
                 confirmation_method='automatic'
             )
             print(intent)
+            plan_name=data.get('Plan_Name')
+            query=Plan.objects.get(Plan_Name=plan_name)
+            upgradeplan=PlanPurchase.objects.create(user=request.user,Plan_Name=plan_name,Price=query.Price,Duration=query.Duration,Discount=query.Discount)
+            upgradeplan.save()
+
 
             return JsonResponse({'clientSecret': intent.client_secret})
         except stripe.error.StripeError as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
-    
+import stripe
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+
+
+@csrf_exempt
+def verify_payment(request):
+    if request.method == "POST":
+        try:
+            # Parse the request body
+            data = json.loads(request.body)
+            payment_intent_id = data.get("paymentIntentId")
+            plan_name = data.get("plan_name")
+            user_email = data.get("email")  # Assuming you send user_id from the frontend
+
+            if not payment_intent_id or not plan_name or not user_email:
+                return JsonResponse(
+                    {"error": "PaymentIntent ID, plan name, and user Email are required"}, 
+                    status=400
+                )
+
+            # Retrieve the PaymentIntent from Stripe
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+            if payment_intent.status == "succeeded":
+                # Retrieve the plan details
+                from django.contrib.auth.models import User
+                try:
+                    user = User.objects.get(email=user_email)
+                except User.DoesNotExist:
+                    return JsonResponse({"error": "User not found"}, status=404)
+
+                try:
+                    plan = Plan.objects.get(Plan_Name=plan_name)
+                except Plan.DoesNotExist:
+                    return JsonResponse({"error": f"Plan '{plan_name}' not found"}, status=404)
+
+                # Create a PlanPurchase record
+                PlanPurchase.objects.create(
+                    user=user,
+                    Plan_Name=plan.Plan_Name,
+                    Price=plan.Price,
+                    Duration=plan.Duration,
+                    Discount=plan.Discount,
+                    Payment_Status=True,
+                    Purchase_Date=now()
+                )
+
+                return JsonResponse({"success": True, "message": "Payment verified and plan updated."})
+            else:
+                return JsonResponse({"error": "Payment not successful"}, status=400)
+        except stripe.error.StripeError as e:
+            return JsonResponse({"error": str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)    
 def paymentpage(request):
     publickey= "pk_test_51QPJmpGGuOfO0EatCnS6Te6ZaSu1fCIJIQSwXr0kZKS7NH8xGVSLrZ7ZAsjvlTBGHqmiLCZ2LWV23bfSCs1PvOsu00vqmePYoQ"
     return render(request,"payment.html",{'publickey':publickey})
