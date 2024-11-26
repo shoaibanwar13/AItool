@@ -327,7 +327,7 @@ class PlanDetail(APIView):
             # Catch any other exceptions and return the error message
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-stripe.api_key ='sk_test_51MSkgMSHCBDbluu2QxRO54HRllRKXv9nJ8e8Arbs5QLc6uKDd5rujZA3ymEqdlHjpDlWlUgZ1N9BkLoEk6C4OwTi00s6voVKAh'
+stripe.api_key ='sk_test_51QPJmpGGuOfO0EatPTW0RPt6EEWwMdj68bw1n3XJb7lU9VUkbSXy2ez2kvgAWQOydM70MTqZRDheYBHRMZnAkrdX00odXTL7Jw'
 
 
 @csrf_exempt
@@ -353,7 +353,7 @@ def create_payment_intent(request):
     return JsonResponse({'error': 'Invalid request method'}, status=405)
     
 def paymentpage(request):
-    publickey= "pk_test_51MSkgMSHCBDbluu2mJvWLchdYRA6pjyUXXhU0Q7VCPBFfochiCNpmOZGPpTewLMEC0r8EV6iaBYo5yfI2UwCrUSS00a9hf3CVp"
+    publickey= "pk_test_51QPJmpGGuOfO0EatCnS6Te6ZaSu1fCIJIQSwXr0kZKS7NH8xGVSLrZ7ZAsjvlTBGHqmiLCZ2LWV23bfSCs1PvOsu00vqmePYoQ"
     return render(request,"payment.html",{'publickey':publickey})
 class PaypalPaymentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
