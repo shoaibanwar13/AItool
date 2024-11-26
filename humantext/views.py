@@ -42,6 +42,10 @@ from django.utils.timezone import now
  
 from allauth.socialaccount.views import SocialLoginView
  
+from allauth.socialaccount.views import SocialLoginView
+from allauth.socialaccount.adapter import get_adapter
+from allauth.socialaccount.models import SocialAccount
+from allauth.account.utils import user_username
 
 class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
     adapter_class = GoogleOAuth2Adapter
@@ -52,23 +56,25 @@ class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
         response = super().get_response()  # Get the default response
         user = self.user  # The logged-in user
         
-        # Fetch the current plan from PlanPurchase or set a default value
+        # Fetch the current plan from PlanPurchase or set plan_data to None
         current_plan = (
             PlanPurchase.objects.filter(user=user, Payment_Status=True)
             .order_by('-Purchase_Date')
             .first()
         )
-        plan_data = {
-            "Plan_Name": current_plan.Plan_Name if current_plan else None,
-            "Expire_Date": current_plan.Expire_Date if current_plan else None,
-        }
+
+        plan_data = (
+            {
+                "Plan_Name": current_plan.Plan_Name,
+                "Expire_Date": current_plan.Expire_Date,
+            }
+            if current_plan
+            else None
+        )
 
         # Add the plan data to the response
         response.data.update({"plan": plan_data})
         return response
-
-# Create your views here.
-
 # Create your views here.
 class RegisterView(APIView):
     def post(self, request):
