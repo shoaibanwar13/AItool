@@ -23,7 +23,7 @@ def set_username_on_google_login(sender, request, user, **kwargs):
         # Fetch the username from social account details
         social_account = user.socialaccount_set.first()  # Assuming you're using django-allauth
         if social_account:
-            username = social_account.extra_data.get('name') or social_account.extra_data.get('email', '').split('@')[0]
+            username =social_account.extra_data.get('email', '').split('@')[0]
             user.username = username
             user.save()
 
