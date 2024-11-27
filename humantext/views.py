@@ -48,6 +48,7 @@ nltk.download('wordnet')
 nltk.download('omw-1.4')
 nltk.download('maxent_ne_chunker')
 nltk.download('words')
+nltk.download('punkt')
 
 # Hugging Face API setup
 API_URL = "https://api-inference.huggingface.co/models/pszemraj/flan-t5-large-grammar-synthesis"
@@ -480,11 +481,7 @@ def create_payment_intent(request):
                 capture_method='automatic',
                 confirmation_method='automatic'
             )
-            print(intent)
-            plan_name=data.get('Plan_Name')
-            query=Plan.objects.get(Plan_Name=plan_name)
-            upgradeplan=PlanPurchase.objects.create(user=request.user,Plan_Name=plan_name,Price=query.Price,Duration=query.Duration,Discount=query.Discount)
-            upgradeplan.save()
+             
 
 
             return JsonResponse({'clientSecret': intent.client_secret})
