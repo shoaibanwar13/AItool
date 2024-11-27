@@ -31,16 +31,17 @@ class Plan(models.Model):
     Price=models.DecimalField(max_digits=6,decimal_places=2)
     Duration=models.DecimalField(max_digits=4,decimal_places=2)
     Discount=models.DecimalField(max_digits=4,decimal_places=2)
-    Benfit=models.DecimalField(max_digits=6,decimal_places=2)
+    Benfit=models.TextField()
+    Word_Limit=models.IntegerField(default=0)
     Created=models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.Plan_Name}"
 class PlanPurchase(models.Model):
     user=models.ForeignKey(User,related_name="Purchased",on_delete=models.CASCADE)
     Plan_Name=models.CharField(max_length=200)
-    Price=models.DecimalField(max_digits=6,decimal_places=2)
+    Price=models.DecimalField(max_digits=15,decimal_places=2)
     Payment_Status=models.BooleanField(default=False)
-    Duration=models.DecimalField(max_digits=4,decimal_places=2)
+    Duration=models.DecimalField(max_digits=10,decimal_places=2)
     Discount=models.DecimalField(max_digits=4,decimal_places=2)
     Expire_Date=models.DateField()
     Purchase_Date=models.DateTimeField(auto_now=True)

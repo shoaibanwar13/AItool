@@ -134,7 +134,7 @@ class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
         
         # Fetch the current plan from PlanPurchase or set plan_data to None
         current_plan = (
-            PlanPurchase.objects.filter(user=user, Payment_Status=True)
+            PlanPurchase.objects.filter(user=user, Payment_Status=True,Expiry_Status=False)
             .order_by('-Purchase_Date')
             .first()
         )
@@ -143,6 +143,7 @@ class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
             {
                 "Plan_Name": current_plan.Plan_Name,
                 "Expire_Date": current_plan.Expire_Date,
+                "Expiry_Status":current_plan.Expiry_Status
             }
             if current_plan
             else None
@@ -249,7 +250,7 @@ class LoginView(APIView):
         else:
             user = authenticate(username=identifier, password=password)
         current_plan = (
-            PlanPurchase.objects.filter(user=user, Payment_Status=True)
+            PlanPurchase.objects.filter(user=user, Payment_Status=True,Expiry_Status=False)
             .order_by('-Purchase_Date')
             .first()
         )
@@ -258,6 +259,7 @@ class LoginView(APIView):
             {
                 "Plan_Name": current_plan.Plan_Name,
                 "Expire_Date": current_plan.Expire_Date,
+                "Expiry_Status":current_plan.Expiry_Status
             }
             if current_plan
             else None
@@ -467,9 +469,12 @@ def create_payment_intent(request):
         try:
             data = json.loads(request.body)
             amount = data.get('amount', 2000)  # Default to 2000 if not provided
-
+            amount = float(20)  # Convert amount to float
+            exchange_rate = 1.0  # Adjust if converting from another currency to USD
+            usd_amount = amount * exchange_rate  # Convert to USD
+            stripe_amount = int(usd_amount * 100)  # Convert to cents 
             intent = stripe.PaymentIntent.create(
-                amount=amount,
+                amount=stripe_amount,
                 currency='usd',
                 payment_method_types=['card'],
                 capture_method='automatic',
