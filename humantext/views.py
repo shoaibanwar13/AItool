@@ -41,6 +41,11 @@ import requests
 import random
 from textblob import TextBlob
 from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.exceptions import APIException
+from rest_framework import status
+import time
 
 # Ensure nltk resources are downloaded
 nltk.download('averaged_perceptron_tagger')
@@ -95,21 +100,24 @@ def paraphrase_sentence(sentence, preserved_terms):
             paraphrased_sentence.append(get_best_synonym(word, pos) if pos else word)
     return ' '.join(paraphrased_sentence)
 
-def query_hugging_face_api(payload):
-    response = requests.post(API_URL, headers=HEADERS, json=payload)
-    return response.json()
-
 # API View
 class GenerateTextView(APIView):
+    RETRY_INTERVAL = 1  # Seconds between retries
+    MAX_RETRIES = 5  # Maximum number of retries
+
     def post(self, request, *args, **kwargs):
         preserved_terms = {"ERP", "AI", "machine learning", "deep learning", "data science", "enterprisingness", "imagination", "provision"}
         text = request.data.get('text', '')
+
         if not text:
             return Response({"error": "Text is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Step 1: Paraphrase the input text
             paraphrased_text = paraphrase_sentence(text, preserved_terms)
-            api_response = query_hugging_face_api({"inputs": paraphrased_text})
+
+            # Step 2: Retry API call logic
+            api_response = self.retry_hugging_face_api({"inputs": paraphrased_text})
 
             if "error" in api_response:
                 raise APIException(f"API error: {api_response['error']}")
@@ -117,12 +125,32 @@ class GenerateTextView(APIView):
             refined_text = api_response[0].get('generated_text', '')
             return Response({
                 "paraphrased_text": paraphrased_text,
-                "generate_text": refined_text
+                "generated_text": refined_text
             })
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
- 
+    def retry_hugging_face_api(self, payload):
+        """
+        Retry logic to handle model loading errors for Hugging Face API.
+        """
+        for attempt in range(self.MAX_RETRIES):
+            response = requests.post(API_URL, headers=HEADERS, json=payload)
+            api_response = response.json()
+
+            if response.status_code == 200 and "error" not in api_response:
+                return api_response
+
+            # If the error indicates model is still loading, wait and retry
+            if "error" in api_response and "loading" in api_response["error"].lower():
+                time.sleep(self.RETRY_INTERVAL)
+            else:
+                # If it's a different error, stop retrying
+                raise APIException(f"API error: {api_response.get('error', 'Unknown error')}")
+
+        # If max retries are exceeded
+        raise APIException("Max retries exceeded while waiting for the model to load.")
+
  
 class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
     adapter_class = GoogleOAuth2Adapter
@@ -527,6 +555,11 @@ def verify_payment(request):
                     plan = Plan.objects.get(Plan_Name=plan_name)
                 except Plan.DoesNotExist:
                     return JsonResponse({"error": f"Plan '{plan_name}' not found"}, status=404)
+                
+                purchase_date = now()
+                expiry_date = purchase_date + timedelta(days=float(plan.Duration))
+                expiry_status = False if expiry_date > now() else True
+
 
                 # Create a PlanPurchase record
                 PlanPurchase.objects.create(
@@ -539,7 +572,13 @@ def verify_payment(request):
                     Purchase_Date=now()
                 )
 
-                return JsonResponse({"success": True, "message": "Payment verified and plan updated."})
+                plan_details = {
+                    "Plan_Name": plan.Plan_Name,
+                    "Expire_Date": expiry_date,
+                    "Expiry_Status": expiry_status
+                }
+
+                return JsonResponse({"success": True, "message": "Payment verified and plan updated.",'plan':plan_details})
             else:
                 return JsonResponse({"error": "Payment not successful"}, status=400)
         except stripe.error.StripeError as e:
