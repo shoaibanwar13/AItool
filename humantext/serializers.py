@@ -2,6 +2,8 @@
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.password_validation import validate_password
+from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -23,14 +25,31 @@ class PlanDetailSerializer(serializers.Serializer):
     fields=['Plan_Name', 'Price', 'Duration', 'Discount', 'Benfit', 'Created']
 
 
+
+# Serializer for Forgot Password
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
+# Serializer for OTP Verification
 class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     otp_code = serializers.CharField(max_length=6)
+
+# Serializer for Reset Password
 class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp_code = serializers.CharField(max_length=6)
     new_password = serializers.CharField(write_only=True)
 
+    def validate_new_password(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages)
+        return value
+
+# Forgot Password View
 
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)
