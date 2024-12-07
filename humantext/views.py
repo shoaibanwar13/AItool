@@ -685,7 +685,7 @@ class ContactUsView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
  
 class HixAPIHandler(APIView):
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     def post(self, request):
         # Get URLs and API key from environment variables
         submit_url = os.getenv("SUBMIT_URL")
