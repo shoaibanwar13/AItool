@@ -81,6 +81,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    #'allauth.account.middleware.AccountMiddleware'
     
  
     
@@ -233,4 +234,16 @@ MEDIA_ROOT =os.path.join(BASE_DIR,"media")
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
+
+# Example: Access sensitive data
+SUBMIT_URL = os.getenv("SUBMIT_URL")
+OBTAIN_URL = os.getenv("OBTAIN_URL")
+API_KEY = os.getenv("API_KEY")
+
  

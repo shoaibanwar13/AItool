@@ -4,7 +4,7 @@ from .models import *
 import stripe
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.models import User
-from rest_framework.response import Response
+ 
 from rest_framework import status
 from django.contrib.auth import authenticate
 import random
@@ -16,7 +16,6 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from rest_framework.decorators import api_view
 from django.utils.timezone import now
 from rest_framework.permissions import IsAuthenticated
@@ -27,129 +26,128 @@ from rest_framework import permissions
 from  .utlis  import make_paypal_payment, verify_paypal_payment
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.utils.timezone import now
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
-from django.utils.timezone import now
 from django.db.models import F
-from rest_framework.exceptions import APIException
-from nltk.corpus import wordnet
-from nltk.tokenize import word_tokenize
-from nltk.tag import pos_tag
-import nltk
-import requests
-import random
-from textblob import TextBlob
-from django.conf import settings
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.exceptions import APIException
-from rest_framework import status
-import time
+# from rest_framework.exceptions import APIException
+# from nltk.corpus import wordnet
+# from nltk.tokenize import word_tokenize
+# from nltk.tag import pos_tag
+# import nltk
+# import requests
+# import random
+# from textblob import TextBlob
+# from django.conf import settings
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework.exceptions import APIException
+# from rest_framework import status
+# import time
+# # Ensure nltk resources are downloaded
+# nltk.download('averaged_perceptron_tagger')
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
+# nltk.download('maxent_ne_chunker')
+# nltk.download('words')
+# nltk.download('punkt')
 
-# Ensure nltk resources are downloaded
-nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
-nltk.download('punkt')
+# # Hugging Face API setup
+# API_URL = "https://api-inference.huggingface.co/models/pszemraj/flan-t5-large-grammar-synthesis"
+# HEADERS = {"Authorization": f"Bearer {settings.HUGGING_FACE_API_KEY}"}  # Add token in settings
 
-# Hugging Face API setup
-API_URL = "https://api-inference.huggingface.co/models/pszemraj/flan-t5-large-grammar-synthesis"
-HEADERS = {"Authorization": f"Bearer {settings.HUGGING_FACE_API_KEY}"}  # Add token in settings
+# # Helper functions
+# def get_wordnet_pos(tag):
+#     if tag.startswith('J'):
+#         return wordnet.ADJ
+#     elif tag.startswith('V'):
+#         return wordnet.VERB
+#     elif tag.startswith('N'):
+#         return wordnet.NOUN
+#     elif tag.startswith('R'):
+#         return wordnet.ADV
+#     return None
 
-# Helper functions
-def get_wordnet_pos(tag):
-    if tag.startswith('J'):
-        return wordnet.ADJ
-    elif tag.startswith('V'):
-        return wordnet.VERB
-    elif tag.startswith('N'):
-        return wordnet.NOUN
-    elif tag.startswith('R'):
-        return wordnet.ADV
-    return None
+# def get_best_synonym(word, pos):
+#     synonyms = []
+#     for syn in wordnet.synsets(word, pos=pos):
+#         for lemma in syn.lemmas():
+#             synonym = lemma.name().replace('_', ' ')
+#             if synonym.lower() != word.lower() and len(synonym.split()) == 1:
+#                 synonyms.append((synonym, lemma.count()))
+#     synonyms = sorted(synonyms, key=lambda x: x[1], reverse=True)
+#     return random.choice([syn[0] for syn in synonyms[:3]]) if synonyms else word
 
-def get_best_synonym(word, pos):
-    synonyms = []
-    for syn in wordnet.synsets(word, pos=pos):
-        for lemma in syn.lemmas():
-            synonym = lemma.name().replace('_', ' ')
-            if synonym.lower() != word.lower() and len(synonym.split()) == 1:
-                synonyms.append((synonym, lemma.count()))
-    synonyms = sorted(synonyms, key=lambda x: x[1], reverse=True)
-    return random.choice([syn[0] for syn in synonyms[:3]]) if synonyms else word
+# def extract_named_entities(text):
+#     words = word_tokenize(text)
+#     pos_tags = pos_tag(words)
+#     named_entities = nltk.ne_chunk(pos_tags)
+#     return {" ".join(c[0] for c in chunk) for chunk in named_entities if hasattr(chunk, 'label')}
 
-def extract_named_entities(text):
-    words = word_tokenize(text)
-    pos_tags = pos_tag(words)
-    named_entities = nltk.ne_chunk(pos_tags)
-    return {" ".join(c[0] for c in chunk) for chunk in named_entities if hasattr(chunk, 'label')}
+# def paraphrase_sentence(sentence, preserved_terms):
+#     corrected_sentence = str(TextBlob(sentence).correct())
+#     named_entities = extract_named_entities(corrected_sentence)
+#     words = word_tokenize(corrected_sentence)
+#     paraphrased_sentence = []
+#     for word, tag in pos_tag(words):
+#         if word in preserved_terms or word in named_entities:
+#             paraphrased_sentence.append(word)
+#         else:
+#             pos = get_wordnet_pos(tag)
+#             paraphrased_sentence.append(get_best_synonym(word, pos) if pos else word)
+#     return ' '.join(paraphrased_sentence)
 
-def paraphrase_sentence(sentence, preserved_terms):
-    corrected_sentence = str(TextBlob(sentence).correct())
-    named_entities = extract_named_entities(corrected_sentence)
-    words = word_tokenize(corrected_sentence)
-    paraphrased_sentence = []
-    for word, tag in pos_tag(words):
-        if word in preserved_terms or word in named_entities:
-            paraphrased_sentence.append(word)
-        else:
-            pos = get_wordnet_pos(tag)
-            paraphrased_sentence.append(get_best_synonym(word, pos) if pos else word)
-    return ' '.join(paraphrased_sentence)
+# # API View
+# class GenerateTextView(APIView):
+#     RETRY_INTERVAL = 1  # Seconds between retries
+#     MAX_RETRIES = 5  # Maximum number of retries
 
-# API View
-class GenerateTextView(APIView):
-    RETRY_INTERVAL = 1  # Seconds between retries
-    MAX_RETRIES = 5  # Maximum number of retries
+#     def post(self, request, *args, **kwargs):
+#         preserved_terms = {"ERP", "AI", "machine learning", "deep learning", "data science", "enterprisingness", "imagination", "provision"}
+#         text = request.data.get('text', '')
 
-    def post(self, request, *args, **kwargs):
-        preserved_terms = {"ERP", "AI", "machine learning", "deep learning", "data science", "enterprisingness", "imagination", "provision"}
-        text = request.data.get('text', '')
+#         if not text:
+#             return Response({"error": "Text is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not text:
-            return Response({"error": "Text is required."}, status=status.HTTP_400_BAD_REQUEST)
+#         try:
+#             # Step 1: Paraphrase the input text
+#             paraphrased_text = paraphrase_sentence(text, preserved_terms)
 
-        try:
-            # Step 1: Paraphrase the input text
-            paraphrased_text = paraphrase_sentence(text, preserved_terms)
+#             # Step 2: Retry API call logic
+#             api_response = self.retry_hugging_face_api({"inputs": paraphrased_text})
 
-            # Step 2: Retry API call logic
-            api_response = self.retry_hugging_face_api({"inputs": paraphrased_text})
+#             if "error" in api_response:
+#                 raise APIException(f"API error: {api_response['error']}")
 
-            if "error" in api_response:
-                raise APIException(f"API error: {api_response['error']}")
+#             refined_text = api_response[0].get('generated_text', '')
+#             return Response({
+#                 "paraphrased_text": paraphrased_text,
+#                 "generated_text": refined_text
+#             })
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            refined_text = api_response[0].get('generated_text', '')
-            return Response({
-                "paraphrased_text": paraphrased_text,
-                "generated_text": refined_text
-            })
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#     def retry_hugging_face_api(self, payload):
+#         """
+#         Retry logic to handle model loading errors for Hugging Face API.
+#         """
+#         for attempt in range(self.MAX_RETRIES):
+#             response = requests.post(API_URL, headers=HEADERS, json=payload)
+#             api_response = response.json()
 
-    def retry_hugging_face_api(self, payload):
-        """
-        Retry logic to handle model loading errors for Hugging Face API.
-        """
-        for attempt in range(self.MAX_RETRIES):
-            response = requests.post(API_URL, headers=HEADERS, json=payload)
-            api_response = response.json()
+#             if response.status_code == 200 and "error" not in api_response:
+#                 return api_response
 
-            if response.status_code == 200 and "error" not in api_response:
-                return api_response
+#             # If the error indicates model is still loading, wait and retry
+#             if "error" in api_response and "loading" in api_response["error"].lower():
+#                 time.sleep(self.RETRY_INTERVAL)
+#             else:
+#                 # If it's a different error, stop retrying
+#                 raise APIException(f"API error: {api_response.get('error', 'Unknown error')}")
 
-            # If the error indicates model is still loading, wait and retry
-            if "error" in api_response and "loading" in api_response["error"].lower():
-                time.sleep(self.RETRY_INTERVAL)
-            else:
-                # If it's a different error, stop retrying
-                raise APIException(f"API error: {api_response.get('error', 'Unknown error')}")
-
-        # If max retries are exceeded
-        raise APIException("Max retries exceeded while waiting for the model to load.")
+#         # If max retries are exceeded
+#         raise APIException("Max retries exceeded while waiting for the model to load.")
 
  
 class GoogleLogin(SocialLoginView):  # For Authorization Code Grant
@@ -509,12 +507,6 @@ def create_payment_intent(request):
         except stripe.error.StripeError as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
-import stripe
-from django.conf import settings
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-
 
 
 @csrf_exempt
@@ -688,5 +680,70 @@ class ContactUsView(APIView):
             return Response({'message': 'Thank you for contacting us!'}, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import requests
+import time
+import os
 
- 
+class HixAPIHandler(APIView):
+    def post(self, request):
+        # Get URLs and API key from environment variables
+        submit_url = os.getenv("SUBMIT_URL")
+        obtain_url = os.getenv("OBTAIN_URL")
+        api_key = os.getenv("API_KEY")
+
+        # Extract input data from request
+        payload = {
+            "input": request.data.get("text"),
+            "mode": request.data.get("mode", "Aggressive")
+        }
+        headers = {"api-key": api_key}
+
+        try:
+            # Step 1: Send data to 'submit' API
+            submit_response = requests.post(submit_url, json=payload, headers=headers)
+            submit_response_data = submit_response.json()
+
+            if submit_response_data.get("err_code") != 0:
+                return Response(
+                    {"error": "Failed to submit data", "details": submit_response_data},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Extract task_id from submit response
+            task_id = submit_response_data["data"]["task_id"]
+
+            # Step 2: Poll the 'obtain' API until task completes
+            max_retries = 10  # Maximum number of retries
+            retry_interval = 2  # Time (in seconds) between retries
+
+            for _ in range(max_retries):
+                obtain_response = requests.get(f"{obtain_url}?task_id={task_id}", headers=headers)
+                obtain_response_data = obtain_response.json()
+
+                # Check if the task is complete
+                if obtain_response_data.get("data", {}).get("subtask_status") == "completed":
+                    # Combine the responses and return
+                    combined_data = {
+                        #"submit_response": submit_response_data,
+                        #"obtain_response": obtain_response_data,
+                        "generated_text":obtain_response_data['data']['output']
+                    }
+                    return Response(combined_data, status=status.HTTP_200_OK)
+
+                # If the task is still running, wait before retrying
+                time.sleep(retry_interval)
+
+            # If task did not complete after retries, return an error
+            return Response(
+                {"error": "Task did not complete within the allowed time", "details": obtain_response_data},
+                status=status.HTTP_408_REQUEST_TIMEOUT
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": "An error occurred", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

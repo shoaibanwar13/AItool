@@ -35,7 +35,8 @@ urlpatterns = [
     path('contact/',ContactUsView.as_view(),name='contact'),
     path('verify_payment/',verify_payment,name="verify_payment"),
     path('planexpired/',PlanExpiryHundler.as_view(),name="planexpired"),
-    path('generate/', GenerateTextView.as_view(), name='generate_text'),
+    path('generate/', HixAPIHandler.as_view(), name='hix-api'),
+    #path('generate/', GenerateTextView.as_view(), name='generate_text'),
     
 ]
     
