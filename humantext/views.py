@@ -31,6 +31,9 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from django.db.models import F
+import requests
+import time
+import os
 # from rest_framework.exceptions import APIException
 # from nltk.corpus import wordnet
 # from nltk.tokenize import word_tokenize
@@ -444,42 +447,42 @@ def get_all_plans(request):
     # Return the list of dictionaries as a JSON response
     return Response(plans_data)
 
-class PlanDetail(APIView):
-    """
-    Retrieve a specific plan's details by its ID.
-    """
+# class PlanDetail(APIView):
+#     """
+#     Retrieve a specific plan's details by its ID.
+#     """
     
-    def get(self, request, plan_id):
-        try:
-            # Fetch a single plan by ID
-            plan = Plan.objects.get(id=plan_id)
+#     def get(self, request, plan_id):
+#         try:
+#             # Fetch a single plan by ID
+#             plan = Plan.objects.get(id=plan_id)
             
-            # Serialize the single plan object
+#             # Serialize the single plan object
              
-            plans_data = [
-        {   'Plan_Id':plan.id,
-            'Plan_Name': plan.Plan_Name,
-            'Price': plan.Price,
-            'Duration': plan.Duration,
-            'Discount': plan.Discount,
-            'Benfit': plan.Benfit,
-            'Created': plan.Created
-        }
-            ]
+#             plans_data = [
+#         {   'Plan_Id':plan.id,
+#             'Plan_Name': plan.Plan_Name,
+#             'Price': plan.Price,
+#             'Duration': plan.Duration,
+#             'Discount': plan.Discount,
+#             'Benfit': plan.Benfit,
+#             'Created': plan.Created
+#         }
+#             ]
     
             
-            # Return serialized data
-            return Response(plans_data, status=status.HTTP_200_OK)
+#             # Return serialized data
+#             return Response(plans_data, status=status.HTTP_200_OK)
         
-        except Plan.DoesNotExist:
-            # Plan not found, return 404
-            return Response({"error": "Plan not found"}, status=status.HTTP_404_NOT_FOUND)
+#         except Plan.DoesNotExist:
+#             # Plan not found, return 404
+#             return Response({"error": "Plan not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        except Exception as e:
-            # Catch any other exceptions and return the error message
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         except Exception as e:
+#             # Catch any other exceptions and return the error message
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-stripe.api_key ='sk_test_51QPJmpGGuOfO0EatPTW0RPt6EEWwMdj68bw1n3XJb7lU9VUkbSXy2ez2kvgAWQOydM70MTqZRDheYBHRMZnAkrdX00odXTL7Jw'
+stripe.api_key =os.getenv("STRIPE_SECRETE")
 
 
 @csrf_exempt
@@ -572,62 +575,62 @@ def verify_payment(request):
             return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)    
-def paymentpage(request):
-    publickey= "pk_test_51QPJmpGGuOfO0EatCnS6Te6ZaSu1fCIJIQSwXr0kZKS7NH8xGVSLrZ7ZAsjvlTBGHqmiLCZ2LWV23bfSCs1PvOsu00vqmePYoQ"
-    return render(request,"payment.html",{'publickey':publickey})
-class PaypalPaymentView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    """
-    Endpoint to create a payment URL
-    """
-    def post(self, request, *args, **kwargs):
-        amount = 20  # Example amount in USD
-        currency = "USD"
-        return_url = "https://example.com/payment/paypal/success/"
-        cancel_url = "https://example.com"
+# def paymentpage(request):
+#     publickey= "pk_test_51QPJmpGGuOfO0EatCnS6Te6ZaSu1fCIJIQSwXr0kZKS7NH8xGVSLrZ7ZAsjvlTBGHqmiLCZ2LWV23bfSCs1PvOsu00vqmePYoQ"
+#     return render(request,"payment.html",{'publickey':publickey})
+# class PaypalPaymentView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     """
+#     Endpoint to create a payment URL
+#     """
+#     def post(self, request, *args, **kwargs):
+#         amount = 20  # Example amount in USD
+#         currency = "USD"
+#         return_url = "https://example.com/payment/paypal/success/"
+#         cancel_url = "https://example.com"
 
-        status, payment_id, approved_url = make_paypal_payment(amount, currency, return_url, cancel_url)
-        if status:
-            # Handle subscription and save payment ID (assuming plan is defined)
-            # handel_subscribtion_paypal(plan=plan, user_id=request.user, payment_id=payment_id)
-            return Response({
-                "success": True,
-                "msg": "Payment link has been successfully created",
-                "approved_url": approved_url
-            }, status=201)
-        else:
-            return Response({
-                "success": False,
-                "msg": "Authentication or payment creation failed"
-            }, status=400)
+#         status, payment_id, approved_url = make_paypal_payment(amount, currency, return_url, cancel_url)
+#         if status:
+#             # Handle subscription and save payment ID (assuming plan is defined)
+#             # handel_subscribtion_paypal(plan=plan, user_id=request.user, payment_id=payment_id)
+#             return Response({
+#                 "success": True,
+#                 "msg": "Payment link has been successfully created",
+#                 "approved_url": approved_url
+#             }, status=201)
+#         else:
+#             return Response({
+#                 "success": False,
+#                 "msg": "Authentication or payment creation failed"
+#             }, status=400)
 
-class PaypalValidatePaymentView(APIView):
-    """
-    Endpoint to validate PayPal payment
-    """
-    permission_classes = [permissions.IsAuthenticated]
+# class PaypalValidatePaymentView(APIView):
+#     """
+#     Endpoint to validate PayPal payment
+#     """
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
-        payment_id = request.data.get("payment_id")
-        if not payment_id:
-            return Response({
-                "success": False,
-                "msg": "Payment ID is required"
-            }, status=400)
+#     def post(self, request, *args, **kwargs):
+#         payment_id = request.data.get("payment_id")
+#         if not payment_id:
+#             return Response({
+#                 "success": False,
+#                 "msg": "Payment ID is required"
+#             }, status=400)
 
-        payment_status = verify_paypal_payment(payment_id)
-        print(payment_id)
-        if payment_status:
-            # Handle successful payment logic here
-            return Response({
-                "success": True,
-                "msg": "Payment approved"
-            }, status=200)
-        else:
-            return Response({
-                "success": False,
-                "msg": "Payment failed or canceled"
-            }, status=400)
+#         payment_status = verify_paypal_payment(payment_id)
+#         print(payment_id)
+#         if payment_status:
+#             # Handle successful payment logic here
+#             return Response({
+#                 "success": True,
+#                 "msg": "Payment approved"
+#             }, status=200)
+#         else:
+#             return Response({
+#                 "success": False,
+#                 "msg": "Payment failed or canceled"
+#             }, status=400)
 class GetProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -680,14 +683,9 @@ class ContactUsView(APIView):
             return Response({'message': 'Thank you for contacting us!'}, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import requests
-import time
-import os
-
+ 
 class HixAPIHandler(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         # Get URLs and API key from environment variables
         submit_url = os.getenv("SUBMIT_URL")
