@@ -716,7 +716,7 @@ class HixAPIHandler(APIView):
 
             # Step 2: Poll the 'obtain' API until task completes
             max_retries = 50  # Maximum number of retries
-            retry_interval = 2  # Time (in seconds) between retries
+            retry_interval = 5 # Time (in seconds) between retries
 
             for _ in range(max_retries):
                 obtain_response = requests.get(f"{obtain_url}?task_id={task_id}", headers=headers)
