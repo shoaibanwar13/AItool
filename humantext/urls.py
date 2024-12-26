@@ -37,6 +37,7 @@ urlpatterns = [
     path('planexpired/',PlanExpiryHundler.as_view(),name="planexpired"),
     path('generate/', HixAPIHandler.as_view(), name='hix-api'),
     #path('generate/', GenerateTextView.as_view(), name='generate_text'),
+    path("ai-detector/",ai_detector,name="ai_detector")
     
 ]
     

@@ -35,6 +35,7 @@ import requests
 import time
 import os
 from rest_framework.response import Response
+from gradio_client import Client
 # from rest_framework.exceptions import APIException
 # from nltk.corpus import wordnet
 # from nltk.tokenize import word_tokenize
@@ -746,3 +747,29 @@ class HixAPIHandler(APIView):
                 {"error": "An error occurred", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+import requests
+
+API_URL = "https://api-inference.huggingface.co/models/TrustSafeAI/RADAR-AI-Text-Detector"
+headers = {"Authorization": "Bearer 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"}  
+
+def query(payload):
+	response = requests.post(API_URL, headers=headers, json=payload)
+	return response.json()
+	
+
+@api_view(['POST'])
+#permission_classes([IsAuthenticated])
+def ai_detector(request):
+    user_text=request.data['text']
+    client = Client("TrustSafeAI/RADAR-AI-Text-Detector")
+    result = client.predict(
+		text=user_text,
+		api_name="/predict"
+)
+    if result:
+        return Response({"score":result},status=status.HTTP_200_OK)
+    else:
+        return Response("Sorry Something Went Wrong!!",status=status.HTTP_400_BAD_REQUEST)
+
+ 
+
