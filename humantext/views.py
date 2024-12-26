@@ -715,7 +715,7 @@ class HixAPIHandler(APIView):
             task_id = submit_response_data["data"]["task_id"]
 
             # Step 2: Poll the 'obtain' API until task completes
-            max_retries = 10  # Maximum number of retries
+            max_retries = 50  # Maximum number of retries
             retry_interval = 2  # Time (in seconds) between retries
 
             for _ in range(max_retries):
