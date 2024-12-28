@@ -747,29 +747,43 @@ class HixAPIHandler(APIView):
                 {"error": "An error occurred", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-import requests
+ 
 
-API_URL = "https://api-inference.huggingface.co/models/TrustSafeAI/RADAR-AI-Text-Detector"
-headers = {"Authorization": "Bearer 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"}  
-
-def query(payload):
-	response = requests.post(API_URL, headers=headers, json=payload)
-	return response.json()
-	
 
 @api_view(['POST'])
-#permission_classes([IsAuthenticated])
+# permission_classes([IsAuthenticated])
 def ai_detector(request):
+    # API_URL = "https://api-inference.huggingface.co/models/TrustSafeAI/RADAR-Vicuna-7B"
+    # headers = {"Authorization": os.getenv("KEY")} 
+
+    # def query(payload):
+    #     response = requests.post(API_URL, headers=headers, json=payload)
+    #     return response.json()
     user_text=request.data['text']
-    client = Client("TrustSafeAI/RADAR-AI-Text-Detector")
+
+    # user_text = request.data.get("inputs",  text)
+    # result = query({"inputs": user_text})
+    # score = result[:1][0]
+    # human_score=score[0]["score"]
+    # ai_score=score[1]["score"]
+    # label="Nutural"
+    # if ai_score>=0.60:
+    #     label="AI Generated:High Confidence"
+    # if human_score>=0.60:
+    #     label="Human:High Confidence"
+    from gradio_client import Client
+
+    client = Client("jinyin3/RADAR-AI-Text-Detector")
     result = client.predict(
-		text=user_text,
+		text= user_text,
 		api_name="/predict"
 )
+    print(result)
+    
     if result:
-        return Response({"score":result},status=status.HTTP_200_OK)
+        return Response(result, status=status.HTTP_200_OK)
     else:
-        return Response("Sorry Something Went Wrong!!",status=status.HTTP_400_BAD_REQUEST)
+        return Response("Sorry Something Went Wrong!!", status=status.HTTP_400_BAD_REQUEST)
 
  
 
