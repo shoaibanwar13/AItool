@@ -751,39 +751,27 @@ class HixAPIHandler(APIView):
 
 
 @api_view(['POST'])
-# permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])  
 def ai_detector(request):
-    # API_URL = "https://api-inference.huggingface.co/models/TrustSafeAI/RADAR-Vicuna-7B"
-    # headers = {"Authorization": os.getenv("KEY")} 
+    try:
+        user_text = request.data.get('text', '')  
 
-    # def query(payload):
-    #     response = requests.post(API_URL, headers=headers, json=payload)
-    #     return response.json()
-    user_text=request.data['text']
+        if not user_text:
+            return Response({"error": "Text field is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # user_text = request.data.get("inputs",  text)
-    # result = query({"inputs": user_text})
-    # score = result[:1][0]
-    # human_score=score[0]["score"]
-    # ai_score=score[1]["score"]
-    # label="Nutural"
-    # if ai_score>=0.60:
-    #     label="AI Generated:High Confidence"
-    # if human_score>=0.60:
-    #     label="Human:High Confidence"
-    from gradio_client import Client
+        client = Client("jinyin3/RADAR-AI-Text-Detector")
+        result = client.predict(
+            text=user_text,
+            api_name="/predict"
+        )
 
-    client = Client("jinyin3/RADAR-AI-Text-Detector")
-    result = client.predict(
-		text= user_text,
-		api_name="/predict"
-)
-    print(result)
-    
-    if result:
-        return Response(result, status=status.HTTP_200_OK)
-    else:
-        return Response("Sorry Something Went Wrong!!", status=status.HTTP_400_BAD_REQUEST)
+        if result:
+            return Response(result, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Model did not return a valid response."}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
  
 
