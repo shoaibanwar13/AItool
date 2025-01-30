@@ -36,6 +36,7 @@ import time
 import os
 from rest_framework.response import Response
 from gradio_client import Client
+from django.conf import settings
 # from rest_framework.exceptions import APIException
 # from nltk.corpus import wordnet
 # from nltk.tokenize import word_tokenize
@@ -213,7 +214,7 @@ class RegisterView(APIView):
         send_mail(
             subject='Your OTP Verification Code',
             message=f'Your OTP code is {otp}. Please verify your account.',
-            from_email='shoaib4311859@gmail.com',  # Replace with your sender email
+            from_email=settings.EMAIL_HOST,  # Replace with your sender email
             recipient_list=[email],
             fail_silently=False,
         )
@@ -338,7 +339,7 @@ class ForgotPasswordView(APIView):
                 send_mail(
                     'Your OTP Code',
                     f'Your OTP code is {otp}',
-                    'your_email@example.com',
+                    settings.EMAIL_HOST,
                     [email],
                     fail_silently=False,
                 )
@@ -755,23 +756,18 @@ class HixAPIHandler(APIView):
 def ai_detector(request):
     try:
         user_text = request.data.get('text', '')  
-
         if not user_text:
             return Response({"error": "Text field is required."}, status=status.HTTP_400_BAD_REQUEST)
-
         client = Client("jinyin3/RADAR-AI-Text-Detector")
         result = client.predict(
             text=user_text,
             api_name="/predict"
         )
-
         if result:
             return Response(result, status=status.HTTP_200_OK)
         else:
             return Response({"error": "Model did not return a valid response."}, status=status.HTTP_400_BAD_REQUEST)
-
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
  
 
