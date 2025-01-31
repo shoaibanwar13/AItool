@@ -214,7 +214,7 @@ class RegisterView(APIView):
         send_mail(
             subject='Your OTP Verification Code',
             message=f'Your OTP code is {otp}. Please verify your account.',
-            from_email=os.getenv('EMAIL_HOST_USER'),  # Replace with your sender email
+            from_email="shoaib0033237@gmail.com",  # Replace with your sender email
             recipient_list=[email],
             fail_silently=False,
         )
@@ -339,7 +339,7 @@ class ForgotPasswordView(APIView):
                 send_mail(
                     'Your OTP Code',
                     f'Your OTP code is {otp}',
-                    os.getenv('EMAIL_HOST_USER'),
+                    "shoaib0033237@gmail.com",
                     [email],
                     fail_silently=False,
                 )
